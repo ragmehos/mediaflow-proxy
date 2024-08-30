@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Request, Depends, APIRouter, Query, HTTPException
 
-from .handlers import handle_hls_stream_proxy, proxy_stream, get_manifest, get_playlist, get_segment, get_public_ip
+from .handlers import handle_hls_stream_proxy, proxy_stream, get_manifest, get_playlist, get_segment, get_public_ip, proxy_endpoint
 from .schemas import MPDSegmentParams, MPDPlaylistParams, HLSManifestParams, ProxyStreamParams, MPDManifestParams
 from .utils.http_utils import get_proxy_headers, ProxyRequestHeaders
 
@@ -125,3 +125,23 @@ async def get_mediaflow_proxy_public_ip(
         Response: The HTTP response with the public IP address in the form of a JSON object. {"ip": "xxx.xxx.xxx.xxx"}
     """
     return await get_public_ip(use_request_proxy)
+
+
+@proxy_router.api_route("/endpoint", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy(
+        request: Request,
+        proxy_params: Annotated[ProxyStreamParams, Query()],
+        proxy_headers: Annotated[ProxyRequestHeaders, Depends(get_proxy_headers)],
+):
+    """
+    Proxies any URL to the other URL sent by d.
+
+    Args:
+        request (Request): The incoming HTTP request.
+        proxy_params (ProxyStreamParams): The parameters for the request.
+        proxy_headers (ProxyRequestHeaders): The headers to include in the request.
+
+    Returns:
+        Response: The HTTP response with the streamed content.
+    """
+    return await proxy_endpoint(request, proxy_params, proxy_headers)
