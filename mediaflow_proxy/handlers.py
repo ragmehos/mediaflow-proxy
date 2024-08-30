@@ -356,3 +356,24 @@ async def get_public_ip():
     """
     ip_address_data = await request_with_retry("GET", "https://api.ipify.org?format=json", {})
     return ip_address_data.json()
+
+
+async def proxy_endpoint(request: Request, proxy_params: ProxyStreamParams, proxy_headers: ProxyRequestHeaders):
+    # Extract request details
+    method = request.method
+    body = await request.body()
+    proxy_headers.request["content-type"]=request.headers["content-type"]
+    # Create a httpx client and forward the request
+    async with httpx.AsyncClient() as client:
+        response = await client.request(
+            method,
+            proxy_params.destination,
+            headers=proxy_headers.request,
+            content=body,
+        )
+    # Return the response from the target URL
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers)
+    )
